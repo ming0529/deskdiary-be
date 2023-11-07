@@ -16,7 +16,7 @@ export class RoomSearchController {
 
   @Get('study-rooms/popular')
   @ApiOperation({
-    summary: '스터디룸 인기순 조회',
+    summary: '스터디룸 인기순 조회!',
   })
   @ApiResponse({
     status: 200,
