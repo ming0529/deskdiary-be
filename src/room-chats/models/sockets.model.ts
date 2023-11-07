@@ -14,7 +14,7 @@ export class Socket extends Document {
   })
   @IsNotEmpty()
   @IsString()
-  clientId: string;
+  clientId: string; //소켓아이디
 
   @Prop({
     required: true,
@@ -35,7 +35,7 @@ export class Socket extends Document {
   })
   @IsNotEmpty()
   @IsString()
-  userId: string;
+  userId: number;
 }
 
 export const SocketSchema = SchemaFactory.createForClass(Socket);

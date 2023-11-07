@@ -22,11 +22,11 @@ export class Room extends Document {
   })
   @IsNotEmpty()
   @IsString()
-  owner: string;
+  owner: number;
 
-  @Prop({ type: Object, required: true })
+  @Prop({ type: Object, required: true }) // userList의 타입을 명시적으로 지정
   @IsNotEmpty()
-  @IsString() // userList의 타입을 명시적으로 지정
+  @IsString()
   userList: object;
 }
 

@@ -50,8 +50,6 @@ export class RoomchatsGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() { nickname, uuid, img, userId }: IRoomRequest,
   ): void {
-    client.leave(client.id);
-    client.join(uuid);
     this.roomchatsService.joinRoom(client, this.server, {
       nickname,
       uuid,
@@ -79,6 +77,24 @@ export class RoomchatsGateway
     this.roomchatsService.leaveRoom(client, this.server, uuid);
   }
 
+  //로그아웃
+  @SubscribeMessage('log-out')
+  handleLogOut(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { userId }: IRoomRequest,
+  ): void {
+    this.roomchatsService.logOut(client, this.server, userId);
+  }
+
+  //회원탈퇴로 인한 방 퇴장시키기
+  @SubscribeMessage('withdrawal')
+  handleKickRoomByWithdrawal(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { userId }: IRoomRequest,
+  ): void {
+    this.roomchatsService.KickRoomByWithdrawal(client, this.server, userId);
+  }
+
   afterInit() {
     this.logger.log('init');
   }
@@ -88,7 +104,7 @@ export class RoomchatsGateway
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
-    this.logger.log(`disconnected: ${client.id}`);
+    this.logger.log('disconnected');
     this.roomchatsService.disconnectClient(client, this.server);
   }
 }

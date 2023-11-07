@@ -27,7 +27,7 @@ export class RoomchatsService {
     const exist = await this.socketModel.findOne({ userId: userId });
     if (exist) {
       await this.leaveRoomRequestToApiServer(uuid);
-      return client.emit('joinError', '이미 방에 접속한 사용자 입니다.');
+      return client.emit('joinError', Exception.clientAlreadyConnected);
     }
     client.leave(client.id);
     client.join(uuid);
@@ -45,7 +45,7 @@ export class RoomchatsService {
     client: Socket,
     { nickname, uuid, img, userId }: IRoomRequest,
   ) {
-    const newRoom = { uuid: uuid, owner: client.id, userList: {} };
+    const newRoom = { uuid: uuid, owner: userId, userList: {} };
     newRoom.userList = { [client.id]: { nickname, img, userId } };
     await this.roomModel.create(newRoom);
     const newUser = {
@@ -113,6 +113,28 @@ export class RoomchatsService {
     //return server.to(uuid).emit('left-user', nickname);
     // 유저리스트 보내주기
     this.emitEventForUserList(client, server, uuid, nickname, 'leave-user');
+  }
+
+  async logOut(client: Socket, server: Server, userId: number) {
+    const exist = await this.socketModel.findOne({ userId: userId });
+    if (exist) {
+      const uuid = exist.uuid;
+      const cliendId = exist.clientId;
+      await this.leaveRoomRequestToApiServer(uuid);
+      return server.to(cliendId).emit('log-out', Exception.clientLogOut);
+    }
+  }
+
+  async KickRoomByWithdrawal(client: Socket, server: Server, userId: number) {
+    const room = await this.roomModel.find({ userId });
+    const roomsArr = room.map((x) => x.uuid);
+    //owner가 userId인 모든방 삭제시키기
+    await this.roomModel.deleteMany({ owner: userId });
+    //roomsArr가 uuid인 모든 소켓 삭제시키기
+    await this.socketModel.deleteMany({
+      $or: roomsArr.map((uuid) => ({ uuid: uuid })),
+    });
+    return server.to(roomsArr).emit('kick-room', Exception.roomRemoved);
   }
 
   isOwner(findRoom: any, client: Socket): boolean {

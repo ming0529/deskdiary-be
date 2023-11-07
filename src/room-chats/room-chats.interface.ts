@@ -1,6 +1,6 @@
 export interface IRoomRequest {
-  nickname: string;
-  uuid: string;
+  nickname?: string;
+  uuid?: string;
   img?: string;
   userId?: number;
 }

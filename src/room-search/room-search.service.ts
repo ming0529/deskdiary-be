@@ -5,53 +5,41 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RoomSearchService {
   constructor(private prisma: PrismaService) {}
 
-  async PopularHobbyRooms() {
-    return this.prisma.room.findMany({
-      where: { category: 'hobby' },
+  //취미룸 인기순 최신순, 스터디룸 인기순 최신순 Cursor-based pagination
+  async PopularRooms(cursor: number, category: string) {
+    const pageSize = 12;
+    const lastId = cursor;
+    const QueryResults = await this.prisma.room.findMany({
+      where: { category },
       orderBy: {
         count: 'desc',
       },
+      take: pageSize,
+      skip: lastId ? 1 : 0,
+      ...(lastId && { cursor: { roomId: lastId } }), //lastId가 존재하면 { cursor: { id: lastId } + spread연산자 = cursor: { id: lastId }
     });
+    const lastPostInResults = QueryResults[pageSize - 1]; // Remember: zero-based index! :)
+    const myCursor = lastPostInResults?.roomId;
+    const isEnded = QueryResults.length < pageSize; //페이지에는 데이터 20개 들어가야 하는데 그것보다 적게 나머지가 찍히므로.
+    return { QueryResults, myCursor, isEnded };
   }
 
-  async PopularStudyRooms() {
-    return this.prisma.room.findMany({
-      where: { category: 'study' },
-      orderBy: {
-        count: 'desc',
-      },
-    });
-  }
-
-  async PopularRooms() {
-    return this.prisma.room.findMany({
-      orderBy: {
-        count: 'desc',
-      },
-    });
-  }
-  async LatestRooms() {
-    return this.prisma.room.findMany({
+  async LatestRooms(cursor: number, category: string) {
+    const pageSize = 12;
+    const lastId = cursor;
+    const QueryResults = await this.prisma.room.findMany({
+      where: { category },
       orderBy: {
         createdAt: 'desc',
       },
+      take: pageSize,
+      skip: lastId ? 1 : 0,
+      ...(lastId && { cursor: { roomId: lastId } }),
     });
-  }
-  async LatestHobbyRooms() {
-    return this.prisma.room.findMany({
-      where: { category: 'hobby' },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
-  async LatestStudyRooms() {
-    return this.prisma.room.findMany({
-      where: { category: 'study' },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const lastPostInResults = QueryResults[pageSize - 1]; // Remember: zero-based index! :)
+    const myCursor = lastPostInResults?.roomId;
+    const isEnded = QueryResults.length < pageSize;
+    return { QueryResults, myCursor, isEnded };
   }
 
   //? Top10
@@ -96,5 +84,36 @@ export class RoomSearchService {
       where: { ownerId: userId },
     });
     return rooms;
+  }
+
+  async searchRooms(
+    filter: string,
+    search: string,
+    cursor: number,
+    category: string,
+  ) {
+    //기본이 인기순
+    let orderBy: Record<string, 'asc' | 'desc'> = { count: 'desc' };
+    if (filter === 'Latest') {
+      orderBy = { createdAt: 'desc' };
+    }
+    const pageSize = 12;
+    const lastId = cursor;
+    const QueryResults = await this.prisma.room.findMany({
+      where: {
+        category: category,
+        title: {
+          contains: search,
+        },
+      },
+      orderBy,
+      take: pageSize,
+      skip: lastId ? 1 : 0,
+      ...(lastId && { cursor: { roomId: lastId } }),
+    });
+    const lastPostInResults = QueryResults[pageSize - 1]; // Remember: zero-based index! :)
+    const myCursor = lastPostInResults?.roomId;
+    const isEnded = QueryResults.length < pageSize;
+    return { QueryResults, myCursor, isEnded };
   }
 }
